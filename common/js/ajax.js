@@ -1,4 +1,4 @@
-// Common AJAX function with jQuery
+// Common AJAX function with jQuery and linear progress indicator
 function ajaxRequest({
     url,
     method = 'GET',
@@ -10,6 +10,16 @@ function ajaxRequest({
     onError = (error) => console.error(error),
     onFinally = () => {}
 }) {
+    // Create a linear progress bar element
+    let progressBar = $('<div class="progress">\
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" \
+                                role="progressbar" style="width: 0%;" aria-valuenow="0" \
+                                aria-valuemin="0" aria-valuemax="100"></div>\
+                        </div>').appendTo('body');
+
+    // Initialize progress to 0%
+    progressBar.find('.progress-bar').css('width', '0%');
+
     $.ajax({
         url: url,
         type: method,
@@ -17,6 +27,19 @@ function ajaxRequest({
         data: data ? JSON.stringify(data) : null,
         dataType: dataType,
         contentType: contentType,
+        xhr: function () {
+            let xhr = new window.XMLHttpRequest();
+            // Track upload progress for POST requests
+            if (method.toUpperCase() === 'POST') {
+                xhr.upload.addEventListener("progress", function (evt) {
+                    if (evt.lengthComputable) {
+                        let percentComplete = (evt.loaded / evt.total) * 100;
+                        progressBar.find('.progress-bar').css('width', percentComplete + '%');
+                    }
+                }, false);
+            }
+            return xhr;
+        },
         success: function(response) {
             onSuccess(response);
         },
@@ -24,19 +47,9 @@ function ajaxRequest({
             onError({ jqXHR, textStatus, errorThrown });
         },
         complete: function() {
+            progressBar.remove(); // Remove progress bar after request completes
             onFinally();
         }
     });
 }
 
-// POST request with data and alert message on success
-ajaxRequest({
-    url: '/api/submit-data',
-    method: 'POST',
-    data: { key1: 'value1', key2: 'value2' },
-    onSuccess: (response) => {
-        console.log('Data submitted successfully:', response);
-        alert('Data submitted successfully!');
-    },
-    onError: (error) => console.error('Error occurred:', error)
-});
