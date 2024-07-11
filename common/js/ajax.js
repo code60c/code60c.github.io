@@ -14,7 +14,7 @@ function ajaxRequest({
         url: url,
         type: method,
         headers: headers,
-        data: data ? JSON.stringify(data) : null,
+        data: data ? data : null,
         dataType: dataType,
         contentType: contentType,
         success: function(response) {
